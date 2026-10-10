@@ -1,0 +1,8 @@
+path: C:\Users\katar\OneDrive\Desktop\Error 404\ai_training\dataset
+train: images/train
+val: images/val
+
+names:
+  0: Pothole
+  1: Longitudinal Crack
+  2: Alligator Crack

@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Build Outputs
+frontend/dist/
+frontend/build/
+
+# IDE & OS Files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Ultralytics runs & caches
+ai_training/runs/
+ai_training/dataset/labels/*.cache
+*.log
+
+# Large media / uploads
+backend/static/uploads/*
+!backend/static/uploads/.gitkeep
