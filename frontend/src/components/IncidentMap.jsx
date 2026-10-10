@@ -69,6 +69,13 @@ export default function IncidentMap({ incidents, selectedIncident, setSelectedIn
 
       const marker = L.marker([inc.latitude, inc.longitude], { icon: customIcon }).addTo(map);
 
+      const evidenceUrl = inc.evidence && inc.evidence[0] ? inc.evidence[0].image_url : null;
+      const imgHtml = evidenceUrl ? `
+        <div class="rounded-lg overflow-hidden border border-slate-700 bg-slate-950 h-28 my-1.5">
+          <img src="${evidenceUrl}" alt="Defect Evidence" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=300&auto=format&fit=crop&q=60'" />
+        </div>
+      ` : '';
+
       // Popup Content
       const popupHtml = `
         <div class="p-3 max-w-xs space-y-2 text-xs font-sans">
@@ -80,6 +87,8 @@ export default function IncidentMap({ incidents, selectedIncident, setSelectedIn
               ${inc.status.toUpperCase()}
             </span>
           </div>
+
+          ${imgHtml}
 
           <p class="text-slate-300 font-medium">${inc.location_name}</p>
 

@@ -1,13 +1,16 @@
-import React from 'react';
-import { Activity, ShieldAlert, Cpu, Eye, DollarSign, CheckCircle2, Sliders } from 'lucide-react';
+import React, { useState } from 'react';
+import { Activity, ShieldAlert, Cpu, Eye, DollarSign, CheckCircle2, Sliders, ZoomIn } from 'lucide-react';
+import ImageModal from './ImageModal';
 
 export default function RiskCard({ incident, onVerifyClick, onUpdateIncident }) {
+  const [inspectingImage, setInspectingImage] = useState(null);
+
   if (!incident) {
     return (
       <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 text-center text-slate-500 text-sm flex flex-col items-center justify-center h-full min-h-[320px]">
         <Activity className="w-10 h-10 mb-3 text-slate-700 animate-pulse" />
         <p className="font-medium text-slate-400">No Incident Selected</p>
-        <p className="text-xs text-slate-600 mt-1 max-w-xs">Click on any marker on the map or row in the table to inspect explainable risk scoring.</p>
+        <p className="text-xs text-slate-600 mt-1 max-w-xs">Click on any marker on the map or row in the table to inspect explainable risk scoring and visual evidence.</p>
       </div>
     );
   }
@@ -19,6 +22,9 @@ export default function RiskCard({ incident, onVerifyClick, onUpdateIncident }) 
   const confPoints = (10.0 * incident.confidence).toFixed(1);
 
   const isVerified = incident.status === 'verified';
+  const evidenceUrl = incident.evidence && incident.evidence.length > 0
+    ? incident.evidence[0].image_url
+    : 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=600&auto=format&fit=crop&q=60';
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between space-y-4">
@@ -40,23 +46,33 @@ export default function RiskCard({ incident, onVerifyClick, onUpdateIncident }) 
         </div>
       </div>
 
-      {/* Visual Evidence Preview */}
-      {incident.evidence && incident.evidence.length > 0 && (
-        <div className="relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950 max-h-40">
-          <img
-            src={incident.evidence[0].image_url}
-            alt="Defect Evidence"
-            className="w-full h-36 object-cover object-center"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=600&auto=format&fit=crop&q=60';
-            }}
-          />
-          <div className="absolute top-2 left-2 px-2 py-1 bg-slate-950/80 backdrop-blur rounded text-[10px] font-semibold text-slate-300 border border-slate-700">
-            YOLO Evidence Frame ({incident.evidence[0].frame_timestamp}s)
-          </div>
+      {/* Visual Evidence Preview (Clickable for Full-Screen Inspection) */}
+      <div 
+        onClick={() => setInspectingImage(evidenceUrl)}
+        className="relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950 max-h-44 group cursor-pointer"
+        title="Click to inspect full high-resolution evidence"
+      >
+        <img
+          src={evidenceUrl}
+          alt="Defect Evidence"
+          className="w-full h-40 object-cover object-center group-hover:scale-105 transition-transform"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=600&auto=format&fit=crop&q=60';
+          }}
+        />
+        
+        {/* Overlay hover badge */}
+        <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+          <span className="px-3 py-1.5 bg-slate-900/90 text-cyan-400 rounded-xl text-xs font-bold border border-slate-700 flex items-center gap-1.5 shadow-xl">
+            <ZoomIn className="w-4 h-4" /> Inspect High-Res Evidence Image
+          </span>
         </div>
-      )}
+
+        <div className="absolute top-2 left-2 px-2 py-1 bg-slate-950/85 backdrop-blur rounded text-[10px] font-semibold text-slate-200 border border-slate-700 flex items-center gap-1">
+          <Eye className="w-3 h-3 text-cyan-400" /> YOLO Evidence Frame ({incident.evidence && incident.evidence[0] ? incident.evidence[0].frame_timestamp : 1.5}s)
+        </div>
+      </div>
 
       {/* Risk Formula Breakdown */}
       <div className="space-y-2 bg-slate-950/70 p-3.5 rounded-xl border border-slate-800/80">
@@ -68,7 +84,7 @@ export default function RiskCard({ incident, onVerifyClick, onUpdateIncident }) 
         {/* Severity */}
         <div className="space-y-1">
           <div className="flex justify-between text-xs text-slate-400">
-            <span>Damage Severity (S - 45%)</span>
+            <span>Pothole Depth & Severity (S - 45%)</span>
             <span className="font-semibold text-rose-400">{Math.round(incident.severity * 100)}% ({sevPoints} pts)</span>
           </div>
           <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
@@ -76,7 +92,7 @@ export default function RiskCard({ incident, onVerifyClick, onUpdateIncident }) 
           </div>
         </div>
 
-        {/* Road Importance */}
+        {/* Importance */}
         <div className="space-y-1">
           <div className="flex justify-between text-xs text-slate-400">
             <span>Road Importance (R - 25%)</span>
@@ -129,6 +145,13 @@ export default function RiskCard({ incident, onVerifyClick, onUpdateIncident }) 
           {isVerified ? 'Verified & Complete' : 'Verify Repair Completion'}
         </button>
       </div>
+
+      {/* High-Resolution Evidence Lightbox Modal */}
+      <ImageModal
+        imageUrl={inspectingImage}
+        title={`Visual Evidence — ${incident.damage_type} at ${incident.location_name}`}
+        onClose={() => setInspectingImage(null)}
+      />
     </div>
   );
 }

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Filter, Search, ShieldAlert, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Filter, Search, ShieldAlert, CheckCircle2, ChevronRight, ZoomIn } from 'lucide-react';
+import ImageModal from './ImageModal';
 
 export default function IncidentTable({ incidents, selectedIncident, setSelectedIncident, onVerifyClick }) {
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('ALL');
+  const [inspectingImage, setInspectingImage] = useState(null);
 
   const filtered = incidents.filter(inc => {
     const matchesSearch = inc.location_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -71,6 +73,7 @@ export default function IncidentTable({ incidents, selectedIncident, setSelected
         <table className="w-full text-left text-xs text-slate-300">
           <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider font-semibold border-b border-slate-800">
             <tr>
+              <th className="py-3 px-3 text-center">Visual Evidence</th>
               <th className="py-3 px-3">Defect Type</th>
               <th className="py-3 px-3">Location</th>
               <th className="py-3 px-3 text-center">Severity</th>
@@ -83,7 +86,7 @@ export default function IncidentTable({ incidents, selectedIncident, setSelected
           <tbody className="divide-y divide-slate-800/60 font-medium">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan="7" className="py-12 text-center text-slate-500">
+                <td colSpan="8" className="py-12 text-center text-slate-500">
                   <div className="flex flex-col items-center justify-center space-y-2">
                     <ShieldAlert className="w-8 h-8 text-slate-700" />
                     <p className="text-slate-400 font-medium">No Incidents in Municipal Register</p>
@@ -97,6 +100,7 @@ export default function IncidentTable({ incidents, selectedIncident, setSelected
               filtered.map((inc) => {
                 const isSelected = selectedIncident && selectedIncident.id === inc.id;
                 const isVerified = inc.status === 'verified';
+                const evidenceUrl = inc.evidence && inc.evidence[0] ? inc.evidence[0].image_url : null;
 
                 return (
                   <tr
@@ -106,6 +110,34 @@ export default function IncidentTable({ incidents, selectedIncident, setSelected
                       isSelected ? 'bg-cyan-500/10 border-l-2 border-cyan-400' : ''
                     }`}
                   >
+                    <td className="py-3 px-3 text-center">
+                      {evidenceUrl ? (
+                        <div 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setInspectingImage(evidenceUrl);
+                          }}
+                          className="relative inline-block overflow-hidden rounded-lg border border-slate-800 cursor-pointer group"
+                          title="Click to inspect evidence image"
+                        >
+                          <img
+                            src={evidenceUrl}
+                            alt="Evidence"
+                            className="w-12 h-9 object-cover group-hover:scale-110 transition-transform"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=300&auto=format&fit=crop&q=60';
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <ZoomIn className="w-3.5 h-3.5 text-cyan-400" />
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-slate-600 text-[10px]">No image</span>
+                      )}
+                    </td>
+
                     <td className="py-3 px-3 font-semibold text-white">
                       {inc.damage_type}
                     </td>
@@ -160,6 +192,13 @@ export default function IncidentTable({ incidents, selectedIncident, setSelected
           </tbody>
         </table>
       </div>
+
+      {/* High-Resolution Evidence Lightbox Modal */}
+      <ImageModal
+        imageUrl={inspectingImage}
+        title="Mapped Road Defect Visual Evidence"
+        onClose={() => setInspectingImage(null)}
+      />
     </div>
   );
 }

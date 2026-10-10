@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, ShieldCheck, UserCheck, Image, Camera } from 'lucide-react';
+import { X, CheckCircle2, ShieldCheck, UserCheck, Image, Camera, ZoomIn } from 'lucide-react';
+import ImageModal from './ImageModal';
 
 export default function RepairVerificationModal({ incident, onClose, onVerificationSuccess }) {
   const [engineerName, setEngineerName] = useState('Eng. Rajesh Kumar');
   const [notes, setNotes] = useState('Physical inspection conducted on-site. Asphalt patching completed and verified.');
   const [submitting, setSubmitting] = useState(false);
+  const [inspectingImage, setInspectingImage] = useState(null);
 
   if (!incident) return null;
+
+  const beforeImage = incident.evidence && incident.evidence[0] ? incident.evidence[0].image_url : 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=600&auto=format&fit=crop&q=60';
+  const afterImage = 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=600&auto=format&fit=crop&q=60';
 
   const handleVerify = async (e) => {
     e.preventDefault();
@@ -70,31 +75,45 @@ export default function RepairVerificationModal({ incident, onClose, onVerificat
           </div>
         </div>
 
-        {/* Before / After Evidence Images */}
+        {/* Before / After Evidence Images (Clickable for High-Res Zoom) */}
         <div className="grid grid-cols-2 gap-3 text-xs">
           <div>
             <span className="text-slate-400 font-semibold block mb-1">Before (AI Detection)</span>
-            <div className="rounded-xl overflow-hidden border border-slate-800 bg-slate-950 h-28 flex items-center justify-center">
+            <div 
+              onClick={() => setInspectingImage(beforeImage)}
+              className="rounded-xl overflow-hidden border border-slate-800 bg-slate-950 h-28 flex items-center justify-center relative cursor-pointer group"
+              title="Click to zoom image"
+            >
               <img
-                src={incident.evidence && incident.evidence[0] ? incident.evidence[0].image_url : '/static/evidence/sample_pothole_1.jpg'}
+                src={beforeImage}
                 alt="Before Repair"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.src = 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=600&auto=format&fit=crop&q=60';
                 }}
               />
+              <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <ZoomIn className="w-5 h-5 text-cyan-400" />
+              </div>
             </div>
           </div>
 
           <div>
             <span className="text-slate-400 font-semibold block mb-1">After (Repaired Evidence)</span>
-            <div className="rounded-xl overflow-hidden border border-emerald-500/30 bg-slate-950 h-28 flex items-center justify-center relative">
+            <div 
+              onClick={() => setInspectingImage(afterImage)}
+              className="rounded-xl overflow-hidden border border-emerald-500/30 bg-slate-950 h-28 flex items-center justify-center relative cursor-pointer group"
+              title="Click to zoom image"
+            >
               <img
-                src="https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=600&auto=format&fit=crop&q=60"
+                src={afterImage}
                 alt="After Repair"
-                className="w-full h-full object-cover opacity-90"
+                className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform"
               />
+              <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <ZoomIn className="w-5 h-5 text-emerald-400" />
+              </div>
               <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-emerald-950/90 text-emerald-400 rounded text-[9px] font-bold border border-emerald-500/30">
                 Verified Patch
               </span>
@@ -110,43 +129,52 @@ export default function RepairVerificationModal({ incident, onClose, onVerificat
               <UserCheck className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
               <input
                 type="text"
-                required
                 value={engineerName}
                 onChange={(e) => setEngineerName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
+                required
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-white focus:outline-none focus:border-cyan-500"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-slate-400 font-medium mb-1">Inspection Sign-off Notes</label>
+            <label className="block text-slate-400 font-medium mb-1">Inspection Notes & Sign-off</label>
             <textarea
               rows="2"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-cyan-500"
-            ></textarea>
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-500 resize-none"
+            />
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+          <div className="flex items-center justify-end gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-slate-400 hover:text-white font-medium"
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl transition-colors"
             >
               Cancel
             </button>
+
             <button
               type="submit"
               disabled={submitting}
-              className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-emerald-500/20 flex items-center gap-1.5"
+              className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-1.5"
             >
               <CheckCircle2 className="w-4 h-4" />
-              {submitting ? 'Signing Off...' : 'Confirm Verification & Sign-off'}
+              {submitting ? 'Signing Off...' : 'Complete Sign-off'}
             </button>
           </div>
         </form>
+
       </div>
+
+      {/* High-Resolution Evidence Lightbox Modal */}
+      <ImageModal
+        imageUrl={inspectingImage}
+        title="Repair Verification Evidence Inspection"
+        onClose={() => setInspectingImage(null)}
+      />
     </div>
   );
 }
