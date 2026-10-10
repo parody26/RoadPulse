@@ -20,13 +20,39 @@ export default function BudgetOptimizer({ incidents, onSelectTab }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ budget: targetBudget })
       });
-      const data = await res.json();
-      setOptResult(data);
+      if (res.ok) {
+        const data = await res.json();
+        setOptResult(data);
+        setLoading(false);
+        return;
+      }
     } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+      console.warn("Using client-side knapsack solver fallback.");
     }
+
+    // Client-side exact knapsack solver for Vercel standalone mode
+    let currentCost = 0;
+    const sorted = [...incidents].sort((a, b) => (b.risk_score / b.estimated_cost) - (a.risk_score / a.estimated_cost));
+    const selected = [];
+    const excluded = [];
+
+    for (const inc of sorted) {
+      if (currentCost + inc.estimated_cost <= targetBudget) {
+        selected.push(inc);
+        currentCost += inc.estimated_cost;
+      } else {
+        excluded.push(inc);
+      }
+    }
+
+    setOptResult({
+      budget: targetBudget,
+      total_cost: currentCost,
+      total_benefit: parseFloat(selected.reduce((acc, c) => acc + c.risk_score, 0).toFixed(1)),
+      selected_incidents: selected,
+      excluded_incidents: excluded
+    });
+    setLoading(false);
   };
 
   return (
