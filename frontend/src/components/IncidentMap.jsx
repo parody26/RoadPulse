@@ -118,6 +118,17 @@ export default function IncidentMap({ incidents, selectedIncident, setSelectedIn
     <div className="relative w-full h-[480px] rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
       <div ref={mapRef} className="w-full h-full z-10" />
 
+      {/* Empty State Overlay */}
+      {incidents.length === 0 && (
+        <div className="absolute inset-0 z-20 bg-slate-950/70 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
+          <MapPin className="w-10 h-10 text-cyan-400/80 mb-3 animate-bounce" />
+          <h4 className="text-sm font-bold text-white">No Road Defects Reported Yet</h4>
+          <p className="text-xs text-slate-400 mt-1 max-w-sm">
+            All mock example data has been removed. Once citizens or inspectors record and submit defects through the portal, real verified incidents will be mapped here with GPS coordinates.
+          </p>
+        </div>
+      )}
+
       {/* Map Legend Overlay */}
       <div className="absolute top-4 right-4 z-20 bg-slate-900/90 backdrop-blur border border-slate-800 px-3.5 py-2.5 rounded-xl shadow-lg text-xs space-y-2">
         <div className="font-semibold text-slate-300 border-b border-slate-800 pb-1 flex items-center gap-1.5">

@@ -5,9 +5,9 @@ import RiskCard from './RiskCard';
 import BudgetOptimizer from './BudgetOptimizer';
 import WorkOrderReport from './WorkOrderReport';
 import RepairVerificationModal from './RepairVerificationModal';
-import { Map, Sliders, FileText, Activity } from 'lucide-react';
+import { Map, Sliders, FileText, Activity, Trash2 } from 'lucide-react';
 
-export default function AdminDashboard({ incidents, refreshIncidents }) {
+export default function AdminDashboard({ incidents, refreshIncidents, onClearIncidents }) {
   const [adminSubTab, setAdminSubTab] = useState('map');
   const [selectedIncident, setSelectedIncident] = useState(incidents.length > 0 ? incidents[0] : null);
   const [verificationIncident, setVerificationIncident] = useState(null);
@@ -52,6 +52,16 @@ export default function AdminDashboard({ incidents, refreshIncidents }) {
           >
             <FileText className="w-3.5 h-3.5" /> Work Orders
           </button>
+
+          {incidents.length > 0 && onClearIncidents && (
+            <button
+              onClick={onClearIncidents}
+              className="px-2.5 py-1.5 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-rose-900/40 transition-all flex items-center gap-1.5 ml-1"
+              title="Reset all citizen defect submissions"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Clear ({incidents.length})
+            </button>
+          )}
         </div>
       </div>
 

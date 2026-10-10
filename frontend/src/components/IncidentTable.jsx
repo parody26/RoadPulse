@@ -83,8 +83,14 @@ export default function IncidentTable({ incidents, selectedIncident, setSelected
           <tbody className="divide-y divide-slate-800/60 font-medium">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan="7" className="py-8 text-center text-slate-500">
-                  No matching road incidents found.
+                <td colSpan="7" className="py-12 text-center text-slate-500">
+                  <div className="flex flex-col items-center justify-center space-y-2">
+                    <ShieldAlert className="w-8 h-8 text-slate-700" />
+                    <p className="text-slate-400 font-medium">No Incidents in Municipal Register</p>
+                    <p className="text-slate-600 text-[11px] max-w-sm">
+                      All mock example cases have been cleared. As citizens record and submit road defects through the portal, real verified incidents will appear here.
+                    </p>
+                  </div>
                 </td>
               </tr>
             ) : (

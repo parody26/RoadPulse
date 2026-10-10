@@ -3,11 +3,25 @@ import Header from './components/Header';
 import UserPortal from './components/UserPortal';
 import AdminDashboard from './components/AdminDashboard';
 import AdminPasscodeModal from './components/AdminPasscodeModal';
-import { INITIAL_INCIDENTS } from './data/seedData';
 
 export default function App() {
   const [userRole, setUserRole] = useState('user'); // Default: 'user' ONLY (Citizen Portal)
-  const [incidents, setIncidents] = useState(INITIAL_INCIDENTS);
+  const [incidents, setIncidents] = useState(() => {
+    try {
+      const saved = localStorage.getItem('roadpulse_real_incidents');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Strictly purge any legacy mock/example cases from previous runs
+        const realOnly = Array.isArray(parsed)
+          ? parsed.filter(i => i.id && !i.id.toString().startsWith('inc_'))
+          : [];
+        return realOnly;
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  });
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
 
   useEffect(() => {
@@ -19,52 +33,49 @@ export default function App() {
       const res = await fetch('/api/incidents');
       if (res.ok) {
         const data = await res.json();
-        if (data && data.length > 0) {
-          setIncidents(data);
-          return;
+        const realOnly = Array.isArray(data)
+          ? data.filter(i => i.id && !i.id.toString().startsWith('inc_'))
+          : [];
+        setIncidents(realOnly);
+        try {
+          localStorage.setItem('roadpulse_real_incidents', JSON.stringify(realOnly));
+        } catch (e) {
+          console.warn(e);
         }
+        return;
       }
     } catch (err) {
-      console.warn("Using built-in seed dataset for Admin Portal.");
+      console.warn("Backend API note: using local persistent real incidents.");
     }
-    // Fallback to rich built-in seed incidents (guarantees Admin Portal is never empty)
-    setIncidents(INITIAL_INCIDENTS);
   };
 
-  const handleNewSubmission = (newSubmission) => {
-    const newIncident = {
-      id: newSubmission.id,
-      latitude: newSubmission.lat,
-      longitude: newSubmission.lon,
-      damage_type: "Pothole",
-      severity: 0.89,
-      confidence: 0.93,
-      road_importance: 0.85,
-      exposure_factor: 0.80,
-      risk_score: 86.4,
-      status: "reported",
-      estimated_cost: 3500.0,
-      location_name: `Live Citizen Submission (${newSubmission.lat.toFixed(4)}, ${newSubmission.lon.toFixed(4)})`,
-      created_at: new Date().toISOString(),
-      evidence: [
-        {
-          id: `ev_${newSubmission.id}`,
-          incident_id: newSubmission.id,
-          frame_timestamp: 2.0,
-          image_url: "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=600&auto=format&fit=crop&q=60",
-          bbox_json: '{"x": 120, "y": 140, "w": 200, "h": 150, "class": "Pothole", "confidence": 0.93}'
-        }
-      ],
-      repairs: [
-        {
-          id: `rep_${newSubmission.id}`,
-          incident_id: newSubmission.id,
-          assigned_team: "Municipal Maintenance Unit #4",
-          repair_status: "pending"
-        }
-      ]
-    };
-    setIncidents(prev => [newIncident, ...prev]);
+  const handleNewSubmission = (newIncident) => {
+    setIncidents(prev => {
+      const updated = [newIncident, ...prev];
+      try {
+        localStorage.setItem('roadpulse_real_incidents', JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
+  };
+
+  const handleClearIncidents = async () => {
+    if (window.confirm("Are you sure you want to clear all reported incidents? The Admin Portal will be reset to empty.")) {
+      setIncidents([]);
+      try {
+        localStorage.removeItem('roadpulse_real_incidents');
+        localStorage.removeItem('roadpulse_user_submissions');
+      } catch (e) {
+        console.warn(e);
+      }
+      try {
+        await fetch('/api/incidents/clear', { method: 'POST' });
+      } catch (e) {
+        console.warn("Backend clear note:", e);
+      }
+    }
   };
 
   const totalRiskSum = incidents.reduce((acc, curr) => acc + (curr.risk_score || 0), 0).toFixed(1);
@@ -93,6 +104,7 @@ export default function App() {
           <AdminDashboard
             incidents={incidents}
             refreshIncidents={fetchIncidents}
+            onClearIncidents={handleClearIncidents}
           />
         )}
       </main>
@@ -110,7 +122,7 @@ export default function App() {
       {/* Footer with Protected Admin Access Link */}
       <footer className="border-t border-slate-900 bg-slate-950 py-5 px-6 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-3 max-w-7xl mx-auto w-full">
         <div>
-          RoadPulse &copy; 2026. Live Geolocation & Direct Camera Video Authenticated.
+          RoadPulse &copy; 2026. Live Camera Video & Geolocation Authenticated.
         </div>
         <div>
           {userRole === 'user' && (

@@ -58,3 +58,14 @@ def update_incident(incident_id: str, payload: IncidentUpdateSchema, db: Session
     db.commit()
     db.refresh(incident)
     return incident
+
+@router.post("/clear")
+def clear_all_incidents(db: Session = Depends(get_db)):
+    from models import Evidence, Repair, Video
+    db.query(Evidence).delete()
+    db.query(Repair).delete()
+    db.query(Incident).delete()
+    db.query(Video).delete()
+    db.commit()
+    return {"message": "All incidents cleared successfully", "count": 0}
+

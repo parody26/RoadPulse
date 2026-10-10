@@ -55,6 +55,18 @@ export default function BudgetOptimizer({ incidents, onSelectTab }) {
     setLoading(false);
   };
 
+  if (incidents.length === 0) {
+    return (
+      <div className="max-w-4xl mx-auto bg-slate-900 border border-slate-800 rounded-3xl p-12 text-center space-y-3">
+        <Sliders className="w-10 h-10 text-cyan-400 mx-auto animate-pulse" />
+        <h3 className="text-base font-bold text-white">No Road Defects to Optimize Yet</h3>
+        <p className="text-xs text-slate-400 max-w-md mx-auto">
+          All mock example cases have been cleared. Once real road hazards are reported through the Citizen Portal, the Google OR-Tools budget knapsack solver will recommend optimal repairs here.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Banner */}

@@ -37,7 +37,7 @@ def process_video_cv(video_path: str, video_id: str, sample_interval_sec: float 
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         logger.warning(f"Could not open video file {video_path}. Generating simulated pipeline output.")
-        return generate_simulated_pipeline(video_id)
+        return generate_simulated_pipeline(video_id, user_gps=user_gps)
 
     fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 300
@@ -57,9 +57,13 @@ def process_video_cv(video_path: str, video_id: str, sample_interval_sec: float 
             timestamp = round(frame_idx / fps, 2)
             progress = timestamp / max(1.0, duration_sec)
             
-            # Interpolate route GPS coordinates
-            lat = round(DEFAULT_ROUTE_START[0] + progress * (DEFAULT_ROUTE_END[0] - DEFAULT_ROUTE_START[0]), 6)
-            lon = round(DEFAULT_ROUTE_START[1] + progress * (DEFAULT_ROUTE_END[1] - DEFAULT_ROUTE_START[1]), 6)
+            # Interpolate route GPS coordinates using live user coordinates if provided
+            if user_gps:
+                lat = round(user_gps[0] + progress * 0.0008, 6)
+                lon = round(user_gps[1] + progress * 0.0008, 6)
+            else:
+                lat = round(DEFAULT_ROUTE_START[0] + progress * (DEFAULT_ROUTE_END[0] - DEFAULT_ROUTE_START[0]), 6)
+                lon = round(DEFAULT_ROUTE_START[1] + progress * (DEFAULT_ROUTE_END[1] - DEFAULT_ROUTE_START[1]), 6)
 
             # Perform detection on frame (Random simulated detections for arbitrary video input, or OpenCV thresholding)
             # In production, Ultralytics model.predict(frame) runs here
