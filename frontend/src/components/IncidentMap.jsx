@@ -4,6 +4,30 @@ import 'leaflet/dist/leaflet.css';
 import { AlertTriangle, ShieldCheck, MapPin, ExternalLink, CheckCircle, Layers, Key, Check, X } from 'lucide-react';
 
 const TILE_PROVIDERS = {
+  cartoDark: {
+    name: 'Carto Dark',
+    icon: '🌙',
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    requiresCartoKey: true,
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+    maxZoom: 19
+  },
+  cartoVoyager: {
+    name: 'Carto Voyager',
+    icon: '🏙️',
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    requiresCartoKey: true,
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+    maxZoom: 19
+  },
+  cartoLight: {
+    name: 'Carto Light',
+    icon: '☀️',
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    requiresCartoKey: true,
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+    maxZoom: 19
+  },
   googleRoadmap: {
     name: 'Google Roadmap',
     icon: '🗺️',
@@ -17,13 +41,6 @@ const TILE_PROVIDERS = {
     url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
     attribution: '&copy; Google Maps Satellite',
     maxZoom: 20
-  },
-  darkMode: {
-    name: 'Dark Mode',
-    icon: '🌙',
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-    maxZoom: 19
   },
   openStreetMap: {
     name: 'OpenStreetMap',
@@ -40,7 +57,17 @@ export default function IncidentMap({ incidents, selectedIncident, setSelectedIn
   const tileLayerRef = useRef(null);
   const markersRef = useRef({});
 
-  const [activeProvider, setActiveProvider] = useState('googleRoadmap');
+  const [activeProvider, setActiveProvider] = useState('cartoDark');
+
+  // CARTO & Google API Keys
+  const [cartoApiKey, setCartoApiKey] = useState(() => {
+    try {
+      return localStorage.getItem('roadpulse_carto_api_key') || import.meta.env.VITE_CARTO_API_KEY || '';
+    } catch {
+      return '';
+    }
+  });
+
   const [googleApiKey, setGoogleApiKey] = useState(() => {
     try {
       return localStorage.getItem('roadpulse_google_maps_api_key') || import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
@@ -48,15 +75,27 @@ export default function IncidentMap({ incidents, selectedIncident, setSelectedIn
       return '';
     }
   });
+
   const [showKeyModal, setShowKeyModal] = useState(false);
-  const [tempApiKeyInput, setTempApiKeyInput] = useState('');
+  const [tempCartoKey, setTempCartoKey] = useState('');
+  const [tempGoogleKey, setTempGoogleKey] = useState('');
+
+  // Get tile URL with authenticated API key appended
+  const getAuthenticatedTileUrl = (providerKey, cKey = cartoApiKey) => {
+    const provider = TILE_PROVIDERS[providerKey] || TILE_PROVIDERS.cartoDark;
+    let url = provider.url;
+
+    if (provider.requiresCartoKey && cKey) {
+      url += `?api_key=${encodeURIComponent(cKey)}`;
+    }
+    return url;
+  };
 
   // Initialize Leaflet Map
   useEffect(() => {
     if (!mapRef.current) return;
 
     if (!leafletMapRef.current) {
-      // Default to MG Road Bengaluru / Delhi center
       const map = L.map(mapRef.current, {
         center: [12.978, 77.601],
         zoom: 14,
@@ -65,9 +104,10 @@ export default function IncidentMap({ incidents, selectedIncident, setSelectedIn
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      // Default Tile Layer (Google Roadmap)
       const provider = TILE_PROVIDERS[activeProvider];
-      const tileLayer = L.tileLayer(provider.url, {
+      const tileUrl = getAuthenticatedTileUrl(activeProvider, cartoApiKey);
+
+      const tileLayer = L.tileLayer(tileUrl, {
         attribution: provider.attribution,
         maxZoom: provider.maxZoom
       }).addTo(map);
@@ -88,21 +128,31 @@ export default function IncidentMap({ incidents, selectedIncident, setSelectedIn
     }
 
     const provider = TILE_PROVIDERS[key];
-    tileLayerRef.current = L.tileLayer(provider.url, {
+    const tileUrl = getAuthenticatedTileUrl(key, cartoApiKey);
+
+    tileLayerRef.current = L.tileLayer(tileUrl, {
       attribution: provider.attribution,
       maxZoom: provider.maxZoom
     }).addTo(map);
   };
 
-  // Save Google Maps API Key
-  const handleSaveApiKey = () => {
-    const trimmed = tempApiKeyInput.trim();
-    setGoogleApiKey(trimmed);
+  // Save API Keys
+  const handleSaveApiKeys = () => {
+    const trimmedCarto = tempCartoKey.trim();
+    const trimmedGoogle = tempGoogleKey.trim();
+
+    setCartoApiKey(trimmedCarto);
+    setGoogleApiKey(trimmedGoogle);
+
     try {
-      localStorage.setItem('roadpulse_google_maps_api_key', trimmed);
+      localStorage.setItem('roadpulse_carto_api_key', trimmedCarto);
+      localStorage.setItem('roadpulse_google_maps_api_key', trimmedGoogle);
     } catch (e) {
       console.warn(e);
     }
+
+    // Refresh active tile layer with new key
+    switchProvider(activeProvider);
     setShowKeyModal(false);
   };
 
@@ -122,7 +172,6 @@ export default function IncidentMap({ incidents, selectedIncident, setSelectedIn
     incidents.forEach((inc) => {
       bounds.extend([inc.latitude, inc.longitude]);
 
-      // Marker color selection based on risk and status
       let colorClass = 'bg-amber-500 border-amber-300 text-slate-950 shadow-amber-500/50';
       if (inc.status === 'verified') {
         colorClass = 'bg-emerald-500 border-emerald-300 text-slate-950 shadow-emerald-500/50';
@@ -152,7 +201,6 @@ export default function IncidentMap({ incidents, selectedIncident, setSelectedIn
         </div>
       ` : '';
 
-      // Popup Content
       const popupHtml = `
         <div class="p-3 max-w-xs space-y-2 text-xs font-sans">
           <div class="flex items-center justify-between border-b border-slate-700 pb-2">
@@ -205,7 +253,7 @@ export default function IncidentMap({ incidents, selectedIncident, setSelectedIn
       <div ref={mapRef} className="w-full h-full z-10" />
 
       {/* Top Left: Map Layer Provider Switcher */}
-      <div className="absolute top-4 left-4 z-20 bg-slate-900/90 backdrop-blur border border-slate-800 p-1.5 rounded-xl shadow-xl flex items-center gap-1 text-xs">
+      <div className="absolute top-4 left-4 z-20 bg-slate-900/90 backdrop-blur border border-slate-800 p-1.5 rounded-xl shadow-xl flex flex-wrap items-center gap-1 text-xs">
         {Object.entries(TILE_PROVIDERS).map(([key, prov]) => (
           <button
             key={key}
@@ -221,23 +269,26 @@ export default function IncidentMap({ incidents, selectedIncident, setSelectedIn
           </button>
         ))}
 
-        <div className="h-4 w-px bg-slate-800 mx-1"></div>
+        <div className="h-4 w-px bg-slate-800 mx-1 hidden sm:block"></div>
 
-        {/* Google Maps API Key Config Button */}
+        {/* CARTO / Google API Key Config Button */}
         <button
           onClick={() => {
-            setTempApiKeyInput(googleApiKey);
+            setTempCartoKey(cartoApiKey);
+            setTempGoogleKey(googleApiKey);
             setShowKeyModal(true);
           }}
           className={`px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
-            googleApiKey
+            cartoApiKey || googleApiKey
               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
               : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
           }`}
-          title={googleApiKey ? "Google Maps API Key configured" : "Click to enter your Google Maps API Key"}
+          title={cartoApiKey ? "CARTO Key active" : "Click to configure CARTO API Key"}
         >
           <Key className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">{googleApiKey ? 'API Key Active' : 'Set Google Key'}</span>
+          <span className="hidden md:inline">
+            {cartoApiKey ? 'CARTO Key Active' : googleApiKey ? 'Google Key Active' : 'Set CARTO Key'}
+          </span>
         </button>
       </div>
 
@@ -271,14 +322,14 @@ export default function IncidentMap({ incidents, selectedIncident, setSelectedIn
         </div>
       </div>
 
-      {/* Google Maps API Key Modal */}
+      {/* CARTO & Google API Key Modal */}
       {showKeyModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200">
             <div className="flex items-start justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2 font-bold text-white text-sm">
                 <Key className="w-4 h-4 text-cyan-400" />
-                <span>Google Maps API Key Configuration</span>
+                <span>Map Provider API Key Configuration</span>
               </div>
               <button onClick={() => setShowKeyModal(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
@@ -286,18 +337,31 @@ export default function IncidentMap({ incidents, selectedIncident, setSelectedIn
             </div>
 
             <p className="text-xs text-slate-300">
-              Paste your Google Maps API key below to unlock official Google Maps high-resolution Satellite & Vector tiles.
+              Paste your <b>CARTO API Key</b> below to authenticate Carto Dark, Voyager, and Light map tiles and remove tile watermarks.
             </p>
 
-            <div className="space-y-1 text-xs">
-              <label className="block font-semibold text-slate-400">Google Maps API Key (AIzaSy...)</label>
-              <input
-                type="password"
-                placeholder="AIzaSy..."
-                value={tempApiKeyInput}
-                onChange={(e) => setTempApiKeyInput(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-cyan-500"
-              />
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">CARTO API Key</label>
+                <input
+                  type="password"
+                  placeholder="Paste your CARTO API Key..."
+                  value={tempCartoKey}
+                  onChange={(e) => setTempCartoKey(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-400 mb-1">Optional Google Maps API Key</label>
+                <input
+                  type="password"
+                  placeholder="AIzaSy..."
+                  value={tempGoogleKey}
+                  onChange={(e) => setTempGoogleKey(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-cyan-500"
+                />
+              </div>
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-2">
@@ -308,10 +372,10 @@ export default function IncidentMap({ incidents, selectedIncident, setSelectedIn
                 Cancel
               </button>
               <button
-                onClick={handleSaveApiKey}
+                onClick={handleSaveApiKeys}
                 className="px-5 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-cyan-500/20 flex items-center gap-1.5"
               >
-                <Check className="w-4 h-4" /> Save API Key
+                <Check className="w-4 h-4" /> Save Keys & Reload Map
               </button>
             </div>
           </div>
