@@ -30,7 +30,7 @@ def generate_work_order_report(payload: ReportRequest, db: Session = Depends(get
             "longitude": inc.longitude,
             "severity": f"{int(inc.severity * 100)}%",
             "risk_score": inc.risk_score,
-            "estimated_cost": f"${inc.estimated_cost:,.2f}",
+            "estimated_cost": f"₹{int(inc.estimated_cost):,}",
             "status": inc.status
         })
 
@@ -38,10 +38,10 @@ def generate_work_order_report(payload: ReportRequest, db: Session = Depends(get
         "report_id": f"RP-WO-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}",
         "title": payload.title,
         "generated_at": datetime.utcnow().isoformat(),
-        "municipality": "City Road Maintenance Division",
-        "budget_allocated": f"${payload.budget_allocated:,.2f}",
-        "total_estimated_cost": f"${total_cost:,.2f}",
-        "budget_remaining": f"${max(0.0, payload.budget_allocated - total_cost):,.2f}",
+        "municipality": "Municipal Corporation Road Infrastructure Division",
+        "budget_allocated": f"₹{int(payload.budget_allocated):,}",
+        "total_estimated_cost": f"₹{int(total_cost):,}",
+        "budget_remaining": f"₹{int(max(0.0, payload.budget_allocated - total_cost)):,}",
         "total_risk_reduced": round(total_benefit, 1),
         "total_incidents_selected": len(incidents),
         "work_order_items": items

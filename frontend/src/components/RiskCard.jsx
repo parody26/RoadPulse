@@ -113,8 +113,8 @@ export default function RiskCard({ incident, onVerifyClick, onUpdateIncident }) 
       {/* Action Footer */}
       <div className="flex items-center justify-between pt-2 border-t border-slate-800">
         <div className="text-xs">
-          <span className="text-slate-400">Est. Repair Cost:</span>{' '}
-          <span className="font-bold text-white">${incident.estimated_cost.toLocaleString()}</span>
+          <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Est. Cost (IRC:82 / CPWD DSR)</div>
+          <span className="font-bold text-base text-cyan-400 font-mono">₹{Math.round(Number(incident.estimated_cost)).toLocaleString('en-IN')}</span>
         </div>
 
         <button

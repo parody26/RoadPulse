@@ -10,6 +10,7 @@ except ImportError:
     cv2 = None
 
 from config import EVIDENCE_DIR
+from services.cost_engine import calculate_repair_cost
 
 logger = logging.getLogger(__name__)
 
@@ -18,10 +19,10 @@ DEFAULT_ROUTE_START = (12.971598, 77.594566) # MG Road Start
 DEFAULT_ROUTE_END = (12.985612, 77.608741)   # MG Road End
 
 DAMAGE_CLASSES = {
-    0: ("Pothole", 0.85, 3500.0),            # (Name, base_severity, estimated_cost)
-    1: ("Longitudinal Crack", 0.45, 1200.0),
-    2: ("Transverse Crack", 0.50, 1500.0),
-    3: ("Alligator Crack", 0.75, 2800.0)
+    0: ("Pothole", 0.85),            # (Name, base_severity)
+    1: ("Longitudinal Crack", 0.45),
+    2: ("Transverse Crack", 0.50),
+    3: ("Alligator Crack", 0.75)
 }
 
 def process_video_cv(video_path: str, video_id: str, sample_interval_sec: float = 1.0, user_gps: tuple = None) -> tuple:
@@ -71,9 +72,10 @@ def process_video_cv(video_path: str, video_id: str, sample_interval_sec: float 
             
             if has_defect:
                 class_id = random.choice([0, 1, 2, 3])
-                damage_name, base_sev, cost = DAMAGE_CLASSES[class_id]
+                damage_name, base_sev = DAMAGE_CLASSES[class_id]
                 conf = round(random.uniform(0.78, 0.96), 2)
                 severity = round(min(1.0, base_sev + random.uniform(-0.1, 0.1)), 2)
+                cost = calculate_repair_cost(damage_name, severity, road_importance=0.8)
 
                 # Draw bounding box on frame
                 h, w, _ = frame.shape
@@ -140,7 +142,7 @@ def generate_simulated_pipeline(video_id: str, user_gps: tuple = None) -> tuple:
             "confidence": 0.92,
             "latitude": base_lat,
             "longitude": base_lon,
-            "estimated_cost": 3500.0,
+            "estimated_cost": calculate_repair_cost("Pothole", 0.88, 0.85),
             "road_importance": 0.85,
             "exposure_factor": 0.80,
             "location_name": f"User Live Recorded Incident ({round(base_lat, 4)}, {round(base_lon, 4)})",
@@ -155,7 +157,7 @@ def generate_simulated_pipeline(video_id: str, user_gps: tuple = None) -> tuple:
             "confidence": 0.87,
             "latitude": round(base_lat + 0.0015, 6),
             "longitude": round(base_lon + 0.0012, 6),
-            "estimated_cost": 2800.0,
+            "estimated_cost": calculate_repair_cost("Alligator Crack", 0.76, 0.75),
             "road_importance": 0.75,
             "exposure_factor": 0.70,
             "location_name": f"User Live Recorded Segment ({round(base_lat + 0.0015, 4)}, {round(base_lon + 0.0012, 4)})",

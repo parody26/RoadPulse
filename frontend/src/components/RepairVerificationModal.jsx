@@ -62,7 +62,11 @@ export default function RepairVerificationModal({ incident, onClose, onVerificat
           </div>
           <div className="flex justify-between">
             <span className="text-slate-400">Coordinates:</span>
-            <span className="font-mono text-cyan-400">{incident.latitude}, {incident.longitude}</span>
+            <span className="font-mono text-slate-300">{incident.latitude}, {incident.longitude}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-400">Est. Cost (IRC:82):</span>
+            <span className="font-mono text-cyan-400 font-bold">₹{Math.round(Number(incident.estimated_cost)).toLocaleString('en-IN')}</span>
           </div>
         </div>
 

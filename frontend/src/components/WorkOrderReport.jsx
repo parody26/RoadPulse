@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FileText, Printer, Download, CheckCircle2, ShieldCheck, Building2 } from 'lucide-react';
+import { formatINR } from '../utils/costEstimator';
 
 export default function WorkOrderReport({ incidents }) {
   const [report, setReport] = useState(null);
@@ -7,14 +8,17 @@ export default function WorkOrderReport({ incidents }) {
 
   const generateReport = async () => {
     setGenerating(true);
+    const totalCostNum = incidents.reduce((acc, c) => acc + (c.estimated_cost || 0), 0);
+    const targetBudget = Math.max(50000, Math.round(totalCostNum * 1.2 / 1000) * 1000);
+
     try {
       const selectedIds = incidents.map(i => i.id);
       const res = await fetch('/api/reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: 'Municipal Road Repair & Maintenance Order',
-          budget_allocated: 15000.0,
+          title: 'Municipal Road Repair & Maintenance Order (IRC:82 / CPWD DSR)',
+          budget_allocated: targetBudget,
           incident_ids: selectedIds
         })
       });
@@ -29,7 +33,6 @@ export default function WorkOrderReport({ incidents }) {
     }
 
     // Client-side report generation fallback
-    const totalCost = incidents.reduce((acc, c) => acc + c.estimated_cost, 0);
     const totalBenefit = incidents.reduce((acc, c) => acc + c.risk_score, 0);
     const items = incidents.map((inc, idx) => ({
       item_no: idx + 1,
@@ -39,15 +42,15 @@ export default function WorkOrderReport({ incidents }) {
       longitude: inc.longitude,
       severity: `${Math.round(inc.severity * 100)}%`,
       risk_score: inc.risk_score,
-      estimated_cost: `$${inc.estimated_cost.toLocaleString()}`
+      estimated_cost: formatINR(inc.estimated_cost)
     }));
 
     setReport({
       report_id: `RP-WO-${Date.now().toString().slice(-6)}`,
-      title: 'Municipal Road Repair & Maintenance Order',
+      title: 'Municipal Road Repair & Maintenance Order (IRC:82 / CPWD DSR)',
       generated_at: new Date().toISOString(),
-      budget_allocated: '$15,000.00',
-      total_estimated_cost: `$${totalCost.toLocaleString()}`,
+      budget_allocated: formatINR(targetBudget),
+      total_estimated_cost: formatINR(totalCostNum),
       total_risk_reduced: parseFloat(totalBenefit.toFixed(1)),
       total_incidents_selected: incidents.length,
       work_order_items: items
@@ -59,9 +62,9 @@ export default function WorkOrderReport({ incidents }) {
     return (
       <div className="max-w-4xl mx-auto bg-slate-900 border border-slate-800 rounded-3xl p-12 text-center space-y-3">
         <FileText className="w-10 h-10 text-cyan-400 mx-auto animate-pulse" />
-        <h3 className="text-base font-bold text-white">No Incidents to Generate Work Order Yet</h3>
+        <h3 className="text-base font-bold text-white">No Work Orders to Generate Yet</h3>
         <p className="text-xs text-slate-400 max-w-md mx-auto">
-          All mock example cases have been cleared. As real road hazards are reported by citizens, official municipal repair work orders will be generated here.
+          All mock example cases have been cleared. Once real road hazards are reported through the Citizen Portal, you can generate official municipal repair work orders in Rupees (₹) here.
         </p>
       </div>
     );
@@ -70,43 +73,59 @@ export default function WorkOrderReport({ incidents }) {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-cyan-950/40 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-slate-900 via-cyan-950/40 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <FileText className="w-5 h-5 text-cyan-400" /> Stage 7: Municipal Work Order & Inspection Report
+            <FileText className="w-5 h-5 text-cyan-400" /> Stage 7: Official Municipal Repair Work Order
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Generate an official work order report containing evidence photos, coordinates, risk scores, and repair cost estimations.
+          <p className="text-xs text-slate-400 mt-1 max-w-xl">
+            Generate formal procurement and repair work orders compliant with Indian Roads Congress (IRC:82) and CPWD Schedule of Rates (DSR) in Indian Rupees (₹).
           </p>
         </div>
 
         <button
           onClick={generateReport}
           disabled={generating}
-          className="px-5 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-2 whitespace-nowrap"
+          className="px-5 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-2 shrink-0 self-start sm:self-auto"
         >
-          <FileText className="w-4 h-4" />
-          {report ? 'Regenerate Report' : 'Generate Work Order'}
+          {generating ? 'Compiling Order...' : 'Generate Official Work Order'}
         </button>
       </div>
 
-      {/* Report Paper Preview */}
+      {/* Generated Report Printable Sheet */}
       {report && (
-        <div className="bg-white text-slate-900 rounded-2xl p-8 shadow-2xl space-y-6 border border-slate-200">
+        <div className="bg-white text-slate-900 rounded-2xl p-8 shadow-2xl border border-slate-200 space-y-6 printable-area">
           
-          {/* Official Letterhead Header */}
-          <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4">
-            <div>
-              <div className="flex items-center gap-2 text-cyan-700 font-black text-lg">
-                <Building2 className="w-6 h-6" /> CITY MUNICIPAL ROAD MAINTENANCE AUTHORITY
+          {/* Municipal Letterhead */}
+          <div className="border-b-2 border-slate-900 pb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-slate-900 rounded-xl text-white">
+                <Building2 className="w-6 h-6" />
               </div>
-              <p className="text-xs text-slate-600 mt-0.5">Automated Inspection & Repair Prioritization Unit</p>
+              <div>
+                <h1 className="text-lg font-black uppercase tracking-wide text-slate-900">
+                  Municipal Corporation Infrastructure Division
+                </h1>
+                <p className="text-xs text-slate-600 font-medium">
+                  Road Maintenance & Defect Rectification Wing • Standard Schedule of Rates (DSR)
+                </p>
+              </div>
             </div>
 
-            <div className="text-right text-xs">
+            <div className="text-left sm:text-right text-xs">
               <div className="font-bold font-mono text-slate-800">{report.report_id}</div>
-              <div className="text-slate-500">{new Date(report.generated_at).toLocaleDateString()}</div>
+              <div className="text-slate-500 text-[11px] mt-0.5">
+                Date: {new Date(report.generated_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}
+              </div>
             </div>
+          </div>
+
+          {/* Title & Authorization */}
+          <div>
+            <h2 className="text-base font-bold text-slate-900">{report.title}</h2>
+            <p className="text-xs text-slate-600 mt-1">
+              Authorized repair package prioritized via AI Explanatory Risk Index and OR-Tools 0-1 Knapsack budget optimizer.
+            </p>
           </div>
 
           {/* Summary Box */}
@@ -139,7 +158,7 @@ export default function WorkOrderReport({ incidents }) {
                   <th className="p-2.5">Location & Coordinates</th>
                   <th className="p-2.5 text-center">Severity</th>
                   <th className="p-2.5 text-center">Risk Score</th>
-                  <th className="p-2.5 text-right">Estimated Cost</th>
+                  <th className="p-2.5 text-right">Estimated Cost (₹)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-300">
@@ -153,22 +172,38 @@ export default function WorkOrderReport({ incidents }) {
                     </td>
                     <td className="p-2.5 text-center font-bold text-rose-700">{item.severity}</td>
                     <td className="p-2.5 text-center font-bold text-amber-700">{item.risk_score}</td>
-                    <td className="p-2.5 text-right font-mono font-bold">{item.estimated_cost}</td>
+                    <td className="p-2.5 text-right font-mono font-bold text-cyan-900">{item.estimated_cost}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          {/* Print Button */}
-          <div className="flex justify-end border-t border-slate-300 pt-4">
+          {/* Signatures & Execution Section */}
+          <div className="pt-8 border-t border-slate-300 flex flex-col sm:flex-row justify-between gap-6 text-xs text-slate-600">
+            <div>
+              <div className="font-bold text-slate-900">Executive Engineer (Roads)</div>
+              <div className="text-[11px] text-slate-500 mt-1">Municipal Public Works Department</div>
+              <div className="h-10 border-b border-slate-400 w-48 mt-2"></div>
+            </div>
+
+            <div>
+              <div className="font-bold text-slate-900">Chief Municipal Accounts Officer</div>
+              <div className="text-[11px] text-slate-500 mt-1">Budget Allocation Approved (INR)</div>
+              <div className="h-10 border-b border-slate-400 w-48 mt-2"></div>
+            </div>
+          </div>
+
+          {/* Print Action */}
+          <div className="flex justify-end gap-3 pt-2 no-print">
             <button
               onClick={() => window.print()}
-              className="px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-lg hover:bg-slate-800 flex items-center gap-2"
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow"
             >
-              <Printer className="w-4 h-4" /> Print / Save Work Order PDF
+              <Printer className="w-3.5 h-3.5" /> Print Work Order
             </button>
           </div>
+
         </div>
       )}
     </div>

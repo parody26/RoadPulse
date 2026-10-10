@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, MapPin, Video, CheckCircle2, ShieldAlert, Loader2, AlertCircle, Play, StopCircle, RefreshCw, Send, Zap, Sparkles, RotateCcw, SwitchCamera, Film, Eye } from 'lucide-react';
+import { calculateIRCCost } from '../utils/costEstimator';
 
 export default function UserPortal({ onSubmissionSuccess }) {
   const [gpsLocation, setGpsLocation] = useState(null);
@@ -480,7 +481,7 @@ export default function UserPortal({ onSubmissionSuccess }) {
       exposure_factor: 0.78,
       risk_score: 84.6,
       status: "reported",
-      estimated_cost: 3500.0,
+      estimated_cost: calculateIRCCost("Pothole", 0.88, 0.82),
       location_name: `Live Citizen Report (${gpsLocation.lat.toFixed(4)}, ${gpsLocation.lon.toFixed(4)})`,
       created_at: new Date().toISOString(),
       evidence: [

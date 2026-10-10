@@ -1,7 +1,7 @@
 import React from 'react';
 import { Activity, ShieldAlert, Shield, Lock, Unlock, LogOut, Camera } from 'lucide-react';
 
-export default function Header({ userRole, onAdminLockClick, onAdminLogout, incidentCount, totalRisk }) {
+export default function Header({ userRole, onAdminLockClick, onAdminLogout, incidentCount, totalRisk, totalCost }) {
   return (
     <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-6 py-4">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
@@ -39,6 +39,12 @@ export default function Header({ userRole, onAdminLockClick, onAdminLogout, inci
               <Activity className="w-4 h-4 text-cyan-400" />
               <span className="text-slate-400">Total Risk Index:</span>
               <span className="font-bold text-cyan-300">{totalRisk} pts</span>
+            </div>
+            <div className="h-3 w-px bg-slate-800"></div>
+            <div className="flex items-center gap-2">
+              <span className="text-emerald-400 font-bold">₹</span>
+              <span className="text-slate-400">Total Est. Cost:</span>
+              <span className="font-bold text-emerald-300">₹{Math.round(totalCost || 0).toLocaleString('en-IN')}</span>
             </div>
           </div>
         )}

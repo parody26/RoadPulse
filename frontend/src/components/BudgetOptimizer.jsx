@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Sliders, DollarSign, Activity, CheckCircle2, XCircle, Zap, ShieldCheck } from 'lucide-react';
+import { Sliders, Activity, CheckCircle2, XCircle, Zap, ShieldCheck } from 'lucide-react';
+import { formatINR } from '../utils/costEstimator';
 
 export default function BudgetOptimizer({ incidents, onSelectTab }) {
-  const [budget, setBudget] = useState(10000.0);
+  const maxPossibleBudget = incidents.reduce((acc, curr) => acc + (curr.estimated_cost || 0), 0) || 50000;
+  const initialBudget = Math.min(maxPossibleBudget, Math.max(10000, Math.round(maxPossibleBudget * 0.65 / 1000) * 1000));
+
+  const [budget, setBudget] = useState(initialBudget || 25000.0);
   const [optResult, setOptResult] = useState(null);
   const [loading, setLoading] = useState(false);
-
-  const maxPossibleBudget = incidents.reduce((acc, curr) => acc + curr.estimated_cost, 0) || 20000;
 
   useEffect(() => {
     runOptimizer(budget);
@@ -61,7 +63,7 @@ export default function BudgetOptimizer({ incidents, onSelectTab }) {
         <Sliders className="w-10 h-10 text-cyan-400 mx-auto animate-pulse" />
         <h3 className="text-base font-bold text-white">No Road Defects to Optimize Yet</h3>
         <p className="text-xs text-slate-400 max-w-md mx-auto">
-          All mock example cases have been cleared. Once real road hazards are reported through the Citizen Portal, the Google OR-Tools budget knapsack solver will recommend optimal repairs here.
+          All mock example cases have been cleared. Once real road hazards are reported through the Citizen Portal, the Google OR-Tools budget knapsack solver will recommend optimal repairs in Indian Rupees (₹) here.
         </p>
       </div>
     );
@@ -75,7 +77,7 @@ export default function BudgetOptimizer({ incidents, onSelectTab }) {
           <Sliders className="w-5 h-5 text-cyan-400" /> Stage 6: Google OR-Tools 0-1 Knapsack Budget Optimizer
         </h2>
         <p className="text-xs text-slate-400 mt-1 max-w-3xl">
-          Adjust the available municipal repair budget. The optimization engine solves the 0-1 Knapsack problem ($\max \sum b_i x_i$ s.t. $\sum c_i x_i \le B$) to select the combination of repairs that delivers the highest combined risk reduction.
+          Adjust the available municipal repair budget in Rupees (₹). The optimization engine solves the 0-1 Knapsack problem ($\max \sum b_i x_i$ s.t. $\sum c_i x_i \le B$) to select the combination of repairs that delivers the highest combined risk reduction.
         </p>
       </div>
 
@@ -84,10 +86,10 @@ export default function BudgetOptimizer({ incidents, onSelectTab }) {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
           <div>
             <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1">
-              Available Repair Budget ($B$)
+              Available Municipal Repair Budget (₹B)
             </label>
             <div className="text-3xl font-black text-cyan-400 tracking-tight">
-              ${budget.toLocaleString()}
+              {formatINR(budget)}
             </div>
           </div>
 
@@ -95,7 +97,7 @@ export default function BudgetOptimizer({ incidents, onSelectTab }) {
             <div>
               <span className="text-slate-500 block">Allocated Cost</span>
               <span className="font-bold text-white text-base">
-                ${optResult ? optResult.total_cost.toLocaleString() : 0}
+                {formatINR(optResult ? optResult.total_cost : 0)}
               </span>
             </div>
 
@@ -122,16 +124,16 @@ export default function BudgetOptimizer({ incidents, onSelectTab }) {
         {/* Budget Slider */}
         <div className="space-y-2">
           <div className="flex justify-between text-xs text-slate-400 font-medium">
-            <span>$1,000 (Minimal)</span>
-            <span>$10,000 (Recommended MVP)</span>
-            <span>${maxPossibleBudget.toLocaleString()} (Full Coverage)</span>
+            <span>₹2,000 (Minimal)</span>
+            <span>₹25,000 (Target Municipal Allocation)</span>
+            <span>{formatINR(maxPossibleBudget)} (Full Coverage)</span>
           </div>
 
           <input
             type="range"
-            min="1000"
-            max={Math.max(15000, maxPossibleBudget)}
-            step="500"
+            min="2000"
+            max={Math.max(30000, maxPossibleBudget)}
+            step="1000"
             value={budget}
             onChange={(e) => setBudget(Number(e.target.value))}
             className="w-full h-3 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-cyan-500 border border-slate-800"
@@ -164,7 +166,7 @@ export default function BudgetOptimizer({ incidents, onSelectTab }) {
                     </div>
 
                     <div className="text-right">
-                      <div className="font-mono font-bold text-slate-200">${inc.estimated_cost.toLocaleString()}</div>
+                      <div className="font-mono font-bold text-cyan-400">{formatINR(inc.estimated_cost)}</div>
                       <div className="text-[10px] font-bold text-emerald-400">+{inc.risk_score} Risk Pts</div>
                     </div>
                   </div>
@@ -194,7 +196,7 @@ export default function BudgetOptimizer({ incidents, onSelectTab }) {
                     </div>
 
                     <div className="text-right">
-                      <div className="font-mono text-slate-400">${inc.estimated_cost.toLocaleString()}</div>
+                      <div className="font-mono text-slate-400">{formatINR(inc.estimated_cost)}</div>
                       <div className="text-[10px] font-medium text-amber-500">{inc.risk_score} Risk Pts</div>
                     </div>
                   </div>
