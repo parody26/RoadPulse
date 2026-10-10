@@ -1,18 +1,62 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { AlertTriangle, ShieldCheck, MapPin, ExternalLink, CheckCircle } from 'lucide-react';
+import { AlertTriangle, ShieldCheck, MapPin, ExternalLink, CheckCircle, Layers, Key, Check, X } from 'lucide-react';
+
+const TILE_PROVIDERS = {
+  googleRoadmap: {
+    name: 'Google Roadmap',
+    icon: '🗺️',
+    url: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+    attribution: '&copy; Google Maps',
+    maxZoom: 20
+  },
+  googleSatellite: {
+    name: 'Google Satellite',
+    icon: '🛰️',
+    url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+    attribution: '&copy; Google Maps Satellite',
+    maxZoom: 20
+  },
+  darkMode: {
+    name: 'Dark Mode',
+    icon: '🌙',
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+    maxZoom: 19
+  },
+  openStreetMap: {
+    name: 'OpenStreetMap',
+    icon: '🌐',
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19
+  }
+};
 
 export default function IncidentMap({ incidents, selectedIncident, setSelectedIncident, onOpenVerification }) {
   const mapRef = useRef(null);
   const leafletMapRef = useRef(null);
+  const tileLayerRef = useRef(null);
   const markersRef = useRef({});
 
+  const [activeProvider, setActiveProvider] = useState('googleRoadmap');
+  const [googleApiKey, setGoogleApiKey] = useState(() => {
+    try {
+      return localStorage.getItem('roadpulse_google_maps_api_key') || import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+    } catch {
+      return '';
+    }
+  });
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [tempApiKeyInput, setTempApiKeyInput] = useState('');
+
+  // Initialize Leaflet Map
   useEffect(() => {
     if (!mapRef.current) return;
 
     if (!leafletMapRef.current) {
-      // Default to MG Road Bengaluru coordinates
+      // Default to MG Road Bengaluru / Delhi center
       const map = L.map(mapRef.current, {
         center: [12.978, 77.601],
         zoom: 14,
@@ -21,16 +65,48 @@ export default function IncidentMap({ incidents, selectedIncident, setSelectedIn
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      // Dark theme OpenStreetMap tiles via CartoDB Dark Matter
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-        maxZoom: 19
+      // Default Tile Layer (Google Roadmap)
+      const provider = TILE_PROVIDERS[activeProvider];
+      const tileLayer = L.tileLayer(provider.url, {
+        attribution: provider.attribution,
+        maxZoom: provider.maxZoom
       }).addTo(map);
 
+      tileLayerRef.current = tileLayer;
       leafletMapRef.current = map;
     }
   }, []);
 
+  // Switch Tile Provider
+  const switchProvider = (key) => {
+    setActiveProvider(key);
+    const map = leafletMapRef.current;
+    if (!map) return;
+
+    if (tileLayerRef.current) {
+      tileLayerRef.current.remove();
+    }
+
+    const provider = TILE_PROVIDERS[key];
+    tileLayerRef.current = L.tileLayer(provider.url, {
+      attribution: provider.attribution,
+      maxZoom: provider.maxZoom
+    }).addTo(map);
+  };
+
+  // Save Google Maps API Key
+  const handleSaveApiKey = () => {
+    const trimmed = tempApiKeyInput.trim();
+    setGoogleApiKey(trimmed);
+    try {
+      localStorage.setItem('roadpulse_google_maps_api_key', trimmed);
+    } catch (e) {
+      console.warn(e);
+    }
+    setShowKeyModal(false);
+  };
+
+  // Render Markers
   useEffect(() => {
     const map = leafletMapRef.current;
     if (!map) return;
@@ -125,7 +201,45 @@ export default function IncidentMap({ incidents, selectedIncident, setSelectedIn
 
   return (
     <div className="relative w-full h-[480px] rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
+      {/* Map Element */}
       <div ref={mapRef} className="w-full h-full z-10" />
+
+      {/* Top Left: Map Layer Provider Switcher */}
+      <div className="absolute top-4 left-4 z-20 bg-slate-900/90 backdrop-blur border border-slate-800 p-1.5 rounded-xl shadow-xl flex items-center gap-1 text-xs">
+        {Object.entries(TILE_PROVIDERS).map(([key, prov]) => (
+          <button
+            key={key}
+            onClick={() => switchProvider(key)}
+            className={`px-2.5 py-1 rounded-lg font-medium transition-all flex items-center gap-1.5 ${
+              activeProvider === key
+                ? 'bg-cyan-500 text-slate-950 font-bold shadow'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <span>{prov.icon}</span>
+            <span className="hidden sm:inline">{prov.name}</span>
+          </button>
+        ))}
+
+        <div className="h-4 w-px bg-slate-800 mx-1"></div>
+
+        {/* Google Maps API Key Config Button */}
+        <button
+          onClick={() => {
+            setTempApiKeyInput(googleApiKey);
+            setShowKeyModal(true);
+          }}
+          className={`px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+            googleApiKey
+              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+              : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
+          }`}
+          title={googleApiKey ? "Google Maps API Key configured" : "Click to enter your Google Maps API Key"}
+        >
+          <Key className="w-3.5 h-3.5" />
+          <span className="hidden md:inline">{googleApiKey ? 'API Key Active' : 'Set Google Key'}</span>
+        </button>
+      </div>
 
       {/* Empty State Overlay */}
       {incidents.length === 0 && (
@@ -156,6 +270,53 @@ export default function IncidentMap({ incidents, selectedIncident, setSelectedIn
           <span className="text-slate-400">Verified & Repaired</span>
         </div>
       </div>
+
+      {/* Google Maps API Key Modal */}
+      {showKeyModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-start justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 font-bold text-white text-sm">
+                <Key className="w-4 h-4 text-cyan-400" />
+                <span>Google Maps API Key Configuration</span>
+              </div>
+              <button onClick={() => setShowKeyModal(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-300">
+              Paste your Google Maps API key below to unlock official Google Maps high-resolution Satellite & Vector tiles.
+            </p>
+
+            <div className="space-y-1 text-xs">
+              <label className="block font-semibold text-slate-400">Google Maps API Key (AIzaSy...)</label>
+              <input
+                type="password"
+                placeholder="AIzaSy..."
+                value={tempApiKeyInput}
+                onChange={(e) => setTempApiKeyInput(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                onClick={() => setShowKeyModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveApiKey}
+                className="px-5 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-cyan-500/20 flex items-center gap-1.5"
+              >
+                <Check className="w-4 h-4" /> Save API Key
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
