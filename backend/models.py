@@ -37,10 +37,26 @@ class Incident(Base):
     status = Column(String, default="reported") # reported | reviewed | in_progress | completed | verified
     estimated_cost = Column(Float, default=2500.0)
     location_name = Column(String, default="MG Road, Sector 4")
+    reporter_name = Column(String, default="Citizen Reporter")
+    reporter_email = Column(String, nullable=True)
+    points_awarded = Column(Integer, default=100)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     evidence = relationship("Evidence", back_populates="incident", cascade="all, delete-orphan")
     repairs = relationship("Repair", back_populates="incident", cascade="all, delete-orphan")
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    email = Column(String, unique=True, nullable=False)
+    name = Column(String, nullable=False)
+    avatar = Column(String, nullable=True)
+    google_id = Column(String, nullable=True)
+    points = Column(Integer, default=100) # 100 welcome bonus points
+    potholes_reported = Column(Integer, default=0)
+    total_reports = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 class Evidence(Base):
     __tablename__ = "evidence"

@@ -10,7 +10,7 @@ from database import engine, Base
 from seed_data import seed
 from config import STATIC_DIR
 
-from routers import videos, incidents, optimize, reports, repairs, predict
+from routers import videos, incidents, optimize, reports, repairs, predict, auth
 
 Base.metadata.create_all(bind=engine)
 seed()
@@ -40,6 +40,7 @@ app.include_router(optimize.router)
 app.include_router(reports.router)
 app.include_router(repairs.router)
 app.include_router(predict.router)
+app.include_router(auth.router)
 
 @app.get("/api/health")
 def health_check():

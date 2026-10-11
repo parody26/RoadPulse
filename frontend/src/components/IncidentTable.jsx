@@ -142,8 +142,16 @@ export default function IncidentTable({ incidents, selectedIncident, setSelected
                       {inc.damage_type}
                     </td>
 
-                    <td className="py-3 px-3 text-slate-300 max-w-[200px] truncate">
-                      {inc.location_name}
+                    <td className="py-3 px-3 text-slate-300 max-w-[220px]">
+                      <div className="font-medium text-white truncate">{inc.location_name}</div>
+                      <div className="text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                        <span className="text-cyan-400 font-medium">👤 {inc.reporter_name || 'Citizen Reporter'}</span>
+                        {inc.points_awarded ? (
+                          <span className="text-amber-300 bg-amber-500/15 px-1.5 py-0.2 rounded border border-amber-500/30 font-semibold font-mono text-[9px]">
+                            +{inc.points_awarded} pts
+                          </span>
+                        ) : null}
+                      </div>
                     </td>
 
                     <td className="py-3 px-3 text-center font-bold text-rose-400">

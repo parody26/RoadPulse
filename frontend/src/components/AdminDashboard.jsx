@@ -1,16 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import IncidentMap from './IncidentMap';
 import IncidentTable from './IncidentTable';
 import RiskCard from './RiskCard';
 import BudgetOptimizer from './BudgetOptimizer';
 import WorkOrderReport from './WorkOrderReport';
 import RepairVerificationModal from './RepairVerificationModal';
-import { Map, Sliders, FileText, Activity, Trash2 } from 'lucide-react';
+import { Map, Sliders, FileText, Activity, Trash2, Radio } from 'lucide-react';
 
 export default function AdminDashboard({ incidents, refreshIncidents, onClearIncidents }) {
   const [adminSubTab, setAdminSubTab] = useState('map');
   const [selectedIncident, setSelectedIncident] = useState(incidents.length > 0 ? incidents[0] : null);
   const [verificationIncident, setVerificationIncident] = useState(null);
+
+  // Real-time synchronization: Auto-poll backend every 5 seconds so any citizen report appears live
+  useEffect(() => {
+    if (!refreshIncidents) return;
+    const interval = setInterval(() => {
+      refreshIncidents();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [refreshIncidents]);
+
+  // Maintain selected incident selection
+  useEffect(() => {
+    if (incidents.length > 0) {
+      if (!selectedIncident || !incidents.some(i => i.id === selectedIncident.id)) {
+        setSelectedIncident(incidents[0]);
+      }
+    } else {
+      setSelectedIncident(null);
+    }
+  }, [incidents, selectedIncident]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -18,10 +38,16 @@ export default function AdminDashboard({ incidents, refreshIncidents, onClearInc
       {/* Admin Sub-navigation Header */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <Activity className="w-5 h-5 text-cyan-400" /> Municipal Admin Intelligence Command Center
-          </h2>
-          <p className="text-xs text-slate-400">Review citizen submissions, prioritize risk, optimize budget, and sign off verified repairs</p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <Activity className="w-5 h-5 text-cyan-400" /> Municipal Admin Intelligence Command Center
+            </h2>
+            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Live Telemetry Sync
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 mt-0.5">Review citizen submissions in real-time, prioritize risk, optimize budget, and sign off verified repairs</p>
         </div>
 
         {/* Admin Sub-Tabs */}

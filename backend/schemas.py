@@ -40,12 +40,54 @@ class IncidentSchema(BaseModel):
     status: str
     estimated_cost: float
     location_name: str
+    reporter_name: Optional[str] = None
+    reporter_email: Optional[str] = None
+    points_awarded: Optional[int] = 100
     created_at: datetime
     evidence: List[EvidenceSchema] = []
     repairs: List[RepairSchema] = []
 
     class Config:
         from_attributes = True
+
+class IncidentCreateSchema(BaseModel):
+    id: Optional[str] = None
+    latitude: float
+    longitude: float
+    damage_type: str = "Pothole"
+    severity: float = 0.85
+    confidence: float = 0.94
+    road_importance: float = 0.8
+    exposure_factor: float = 0.7
+    risk_score: float = 82.5
+    status: str = "reported"
+    estimated_cost: float = 2700.0
+    location_name: str = "Live Citizen Report"
+    reporter_name: Optional[str] = "Citizen Reporter"
+    reporter_email: Optional[str] = None
+    points_awarded: int = 100
+    evidence_image_url: Optional[str] = None
+    image_url: Optional[str] = None
+    bbox_json: Optional[str] = None
+
+class UserSchema(BaseModel):
+    id: str
+    email: str
+    name: str
+    avatar: Optional[str] = None
+    points: int = 100
+    potholes_reported: int = 0
+    total_reports: int = 0
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class GoogleAuthRequest(BaseModel):
+    email: str
+    name: str
+    avatar: Optional[str] = None
+    google_id: Optional[str] = None
 
 class IncidentUpdateSchema(BaseModel):
     status: Optional[str] = None

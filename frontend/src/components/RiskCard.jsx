@@ -37,6 +37,16 @@ export default function RiskCard({ incident, onVerifyClick, onUpdateIncident }) 
               <h3 className="text-lg font-bold text-white">{incident.damage_type}</h3>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">{incident.location_name}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[11px] text-slate-300 flex items-center gap-1">
+                <span className="text-cyan-400 font-medium">👤 Reporter:</span> {incident.reporter_name || 'Citizen Reporter'}
+              </span>
+              {incident.points_awarded ? (
+                <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono">
+                  +{incident.points_awarded} Pts Awarded
+                </span>
+              ) : null}
+            </div>
           </div>
 
           <div className="text-right">
