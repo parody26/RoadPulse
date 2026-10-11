@@ -84,10 +84,13 @@ class UserSchema(BaseModel):
         from_attributes = True
 
 class GoogleAuthRequest(BaseModel):
-    email: str
-    name: str
+    email: Optional[str] = None
+    name: Optional[str] = None
     avatar: Optional[str] = None
     google_id: Optional[str] = None
+    credential: Optional[str] = None
+    id_token: Optional[str] = None
+    access_token: Optional[str] = None
 
 class IncidentUpdateSchema(BaseModel):
     status: Optional[str] = None
