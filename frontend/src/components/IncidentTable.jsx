@@ -78,7 +78,6 @@ export default function IncidentTable({ incidents, selectedIncident, setSelected
               <th className="py-3 px-3">Location</th>
               <th className="py-3 px-3 text-center">Severity</th>
               <th className="py-3 px-3 text-center">Risk Score</th>
-              <th className="py-3 px-3 text-right">Est. Cost (₹)</th>
               <th className="py-3 px-3 text-center">Status</th>
               <th className="py-3 px-3 text-right">Action</th>
             </tr>
@@ -86,7 +85,7 @@ export default function IncidentTable({ incidents, selectedIncident, setSelected
           <tbody className="divide-y divide-slate-800/60 font-medium">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan="8" className="py-12 text-center text-slate-500">
+                <td colSpan="7" className="py-12 text-center text-slate-500">
                   <div className="flex flex-col items-center justify-center space-y-2">
                     <ShieldAlert className="w-8 h-8 text-slate-700" />
                     <p className="text-slate-400 font-medium">No Incidents in Municipal Register</p>
@@ -166,10 +165,6 @@ export default function IncidentTable({ incidents, selectedIncident, setSelected
                       }`}>
                         {inc.risk_score}
                       </span>
-                    </td>
-
-                    <td className="py-3 px-3 text-right font-mono text-cyan-400 font-bold">
-                      ₹{Math.round(Number(inc.estimated_cost)).toLocaleString('en-IN')}
                     </td>
 
                     <td className="py-3 px-3 text-center">

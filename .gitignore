@@ -23,6 +23,7 @@ frontend/build/
 # Ultralytics runs & caches
 ai_training/runs/
 ai_training/dataset/labels/*.cache
+backend/datasets/
 *.log
 
 # Large media / uploads

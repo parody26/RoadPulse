@@ -137,7 +137,6 @@ export default function App() {
   };
 
   const totalRiskSum = incidents.reduce((acc, curr) => acc + (curr.risk_score || 0), 0).toFixed(1);
-  const totalCostSum = incidents.reduce((acc, curr) => acc + (curr.estimated_cost || 0), 0);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
@@ -149,7 +148,6 @@ export default function App() {
         onAdminLogout={() => setUserRole('user')}
         incidentCount={incidents.length}
         totalRisk={totalRiskSum}
-        totalCost={totalCostSum}
         currentUser={currentUser}
         onOpenLoginModal={() => setShowGoogleModal(true)}
         onLogoutUser={handleLogoutUser}

@@ -7,7 +7,6 @@ export default function Header({
   onAdminLogout,
   incidentCount,
   totalRisk,
-  totalCost,
   currentUser,
   onOpenLoginModal,
   onLogoutUser
@@ -51,12 +50,6 @@ export default function Header({
               <Activity className="w-4 h-4 text-cyan-400" />
               <span className="text-slate-400">Total Risk Index:</span>
               <span className="font-bold text-cyan-300">{totalRisk} pts</span>
-            </div>
-            <div className="h-3 w-px bg-slate-800"></div>
-            <div className="flex items-center gap-2">
-              <span className="text-emerald-400 font-bold">₹</span>
-              <span className="text-slate-400">Total Est. Cost:</span>
-              <span className="font-bold text-emerald-300">₹{Math.round(totalCost || 0).toLocaleString('en-IN')}</span>
             </div>
           </div>
         )}

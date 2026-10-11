@@ -475,7 +475,6 @@ export default function UserPortal({ onSubmissionSuccess, currentUser, onOpenLog
       if (aiResult) {
         const hasPothole = aiResult.pothole_count > 0;
         const potholeCount = aiResult.pothole_count || 0;
-        const totalCost = hasPothole ? (potholeCount * 2700) : 0;
         const primaryDefect = hasPothole
           ? (potholeCount > 1 ? `${potholeCount} Potholes Detected` : "Pothole")
           : (aiResult.primary_defect || "No Road Defects Detected");
@@ -484,7 +483,6 @@ export default function UserPortal({ onSubmissionSuccess, currentUser, onOpenLog
           inspected: true,
           defect_detected: hasPothole,
           pothole_count: potholeCount,
-          cost: totalCost,
           label: primaryDefect,
           risk_score: hasPothole ? (aiResult.highest_risk_score || 82.5) : 0,
           annotated_image: aiResult.annotated_image_base64
@@ -499,7 +497,6 @@ export default function UserPortal({ onSubmissionSuccess, currentUser, onOpenLog
           inspected: true,
           defect_detected: hasPothole,
           pothole_count: hasPothole ? 1 : 0,
-          cost: hasPothole ? 2700 : 0,
           label: hasPothole ? "Pothole" : (isSimulatedDashcam && simRoadTypeRef.current === 'patch' ? "Safe Bituminous Patch" : "No Road Defects Detected"),
           risk_score: hasPothole ? 84.6 : 0,
           annotated_image: rawDataUrl
@@ -546,7 +543,6 @@ export default function UserPortal({ onSubmissionSuccess, currentUser, onOpenLog
 
     const hasPothole = aiInspection.defect_detected && aiInspection.pothole_count > 0;
     const potholeCount = hasPothole ? (aiInspection.pothole_count || 1) : 0;
-    const calculatedCostINR = hasPothole ? (potholeCount * 2700) : 0;
     const damageType = hasPothole ? "Pothole" : (aiInspection.label || "No Defects Detected (Road in Good Condition)");
     const riskScore = hasPothole ? (aiInspection.risk_score || 84.6) : 0;
     // Civic Gamification Points: 100 points per pothole detected, 10 points for road scouting
@@ -582,7 +578,7 @@ export default function UserPortal({ onSubmissionSuccess, currentUser, onOpenLog
         exposure_factor: 0.75,
         risk_score: riskScore,
         status: "reported",
-        estimated_cost: calculatedCostINR,
+        estimated_cost: 0,
         location_name: `Live Citizen Report (${Number(gpsLocation.lat).toFixed(4)}, ${Number(gpsLocation.lon).toFixed(4)})`,
         reporter_name: currentUser ? currentUser.name : "Citizen Reporter",
         reporter_email: currentUser ? currentUser.email : null,
@@ -615,11 +611,10 @@ export default function UserPortal({ onSubmissionSuccess, currentUser, onOpenLog
       videoId,
       damageType,
       potholeCount,
-      cost: calculatedCostINR,
       riskScore,
       pointsEarned,
       currentUser,
-      status: hasPothole ? "Reported to Municipal Map" : "Road Verified Safe (₹0 Maintenance Required)"
+      status: hasPothole ? "Reported to Municipal Map" : "Road Verified Safe (No Defects)"
     };
     setLastSubmittedAudit(auditData);
 
@@ -634,7 +629,7 @@ export default function UserPortal({ onSubmissionSuccess, currentUser, onOpenLog
       exposure_factor: 0.78,
       risk_score: riskScore,
       status: "reported",
-      estimated_cost: calculatedCostINR,
+      estimated_cost: 0,
       location_name: `Live Citizen Report (${gpsLocation.lat.toFixed(4)}, ${gpsLocation.lon.toFixed(4)})`,
       reporter_name: currentUser ? currentUser.name : "Citizen Reporter",
       reporter_email: currentUser ? currentUser.email : null,
@@ -667,9 +662,8 @@ export default function UserPortal({ onSubmissionSuccess, currentUser, onOpenLog
         time: new Date().toLocaleTimeString(),
         lat: gpsLocation.lat,
         lon: gpsLocation.lon,
-        status: hasPothole ? `Pothole Reported (₹2,700)` : `Road in Good Condition (₹0)`,
+        status: hasPothole ? `Pothole Reported` : `Road in Good Condition`,
         snapshot: capturedSnapshot,
-        cost: calculatedCostINR,
         risk: riskScore,
         damageType: damageType,
         pointsEarned: pointsEarned,
@@ -1083,22 +1077,19 @@ export default function UserPortal({ onSubmissionSuccess, currentUser, onOpenLog
               {aiInspection.pothole_count > 0 ? (
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="px-2 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-500/40 rounded font-bold text-[11px]">
-                    🕳️ {aiInspection.pothole_count} Pothole Detected
+                    🕳️ {aiInspection.pothole_count} Pothole{aiInspection.pothole_count > 1 ? 's' : ''} Detected
                   </span>
-                  <span className="font-mono text-cyan-400 font-bold">
-                    Repair Cost: ₹2,700 flat
+                  <span className="text-amber-400 font-semibold text-[11px]">
+                    High Priority Road Hazard
                   </span>
                   <span className="text-slate-400 text-[11px]">
-                    (Fractured rim cavity confirmed by AI)
+                    (Cavity depth verified by AI)
                   </span>
                 </div>
               ) : (
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded font-bold text-[11px]">
                     ✅ 0 Potholes Detected — Safe Surface
-                  </span>
-                  <span className="font-mono text-emerald-400 font-bold">
-                    Repair Cost: ₹0
                   </span>
                   <span className="text-slate-400 text-[11px]">
                     ({aiInspection.label || 'Bituminous patch / sound road: no structural cavity'})
@@ -1110,12 +1101,12 @@ export default function UserPortal({ onSubmissionSuccess, currentUser, onOpenLog
         )}
       </div>
 
-      {/* Automated AI Detection & Cost Assessment Receipt (Post Submission) */}
+      {/* Automated AI Detection Receipt (Post Submission) */}
       {submittedVideoId && (
         <div className="bg-slate-900 border border-emerald-500/40 rounded-3xl p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400" /> Indian Road AI Defect & Repair Cost Receipt
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" /> Indian Road AI Defect Inspection Receipt
             </div>
             <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border border-emerald-500/30">
               {lastSubmittedAudit && lastSubmittedAudit.potholeCount > 0 ? 'Pothole Hazard Reported' : 'Sound Pavement Verified'}
@@ -1124,8 +1115,8 @@ export default function UserPortal({ onSubmissionSuccess, currentUser, onOpenLog
 
           <p className="text-xs text-slate-300">
             {lastSubmittedAudit && lastSubmittedAudit.potholeCount > 0
-              ? 'The Indian Road AI Inspector detected a true structural pothole cavity. Repair cost is set strictly at the municipal tender rate of ₹2,700 flat per unit and pinned to the municipal command map.'
-              : 'The Indian Road AI Inspector verified that the road contains no structural cavities (safe bituminous repair patches and clean asphalt detected). No road repair work order is required (₹0 cost).'}
+              ? 'The Indian Road AI Inspector detected a true structural pothole cavity. The defect has been prioritized and pinned to the municipal command map.'
+              : 'The Indian Road AI Inspector verified that the road contains no structural cavities (safe bituminous repair patches and clean asphalt detected).'}
           </p>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-950 p-4 rounded-2xl border border-slate-800 text-xs">
@@ -1142,9 +1133,9 @@ export default function UserPortal({ onSubmissionSuccess, currentUser, onOpenLog
               </span>
             </div>
             <div>
-              <span className="text-slate-500 block">Flat Repair Cost</span>
+              <span className="text-slate-500 block">Road Hazard Status</span>
               <span className="font-bold text-cyan-400 text-sm font-mono">
-                {formatINR(lastSubmittedAudit ? lastSubmittedAudit.cost : 0)}
+                {lastSubmittedAudit && lastSubmittedAudit.potholeCount > 0 ? 'Critical Cavity' : 'Safe Surface'}
               </span>
             </div>
             <div>
@@ -1238,15 +1229,17 @@ export default function UserPortal({ onSubmissionSuccess, currentUser, onOpenLog
 
                 <div className="text-right space-y-1">
                   <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                    sub.cost > 0
+                    sub.damageType === 'Pothole' || (sub.status && sub.status.includes('Pothole'))
                       ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
                       : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                   }`}>
                     {sub.status}
                   </span>
-                  <div className={`font-mono font-bold ${sub.cost > 0 ? 'text-cyan-400' : 'text-emerald-400'}`}>
-                    {formatINR(sub.cost !== undefined ? sub.cost : 0)}
-                  </div>
+                  {sub.risk ? (
+                    <div className="text-[11px] text-amber-400 font-mono">
+                      Risk: {sub.risk} pts
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ))}

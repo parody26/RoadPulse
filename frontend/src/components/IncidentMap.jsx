@@ -139,7 +139,7 @@ export default function IncidentMap({ incidents, selectedIncident, setSelectedIn
           <div class="grid grid-cols-2 gap-2 text-slate-400 bg-slate-900/80 p-2 rounded border border-slate-800">
             <div>Severity: <b class="text-slate-200">${Math.round(inc.severity * 100)}%</b></div>
             <div>Risk Score: <b class="text-amber-400">${inc.risk_score}</b></div>
-            <div>Est. Cost: <b class="text-cyan-400">₹${Math.round(Number(inc.estimated_cost)).toLocaleString('en-IN')}</b></div>
+            <div>Hazard: <b class="text-cyan-400">${inc.damage_type}</b></div>
             <div>Conf: <b class="text-slate-200">${Math.round(inc.confidence * 100)}%</b></div>
           </div>
         </div>

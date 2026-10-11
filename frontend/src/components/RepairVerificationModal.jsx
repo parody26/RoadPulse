@@ -70,8 +70,8 @@ export default function RepairVerificationModal({ incident, onClose, onVerificat
             <span className="font-mono text-slate-300">{incident.latitude}, {incident.longitude}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-400">Est. Cost (IRC:82):</span>
-            <span className="font-mono text-cyan-400 font-bold">₹{Math.round(Number(incident.estimated_cost)).toLocaleString('en-IN')}</span>
+            <span className="text-slate-400">Hazard Priority:</span>
+            <span className="font-mono text-cyan-400 font-bold">{incident.risk_score ? `${incident.risk_score} Risk Score` : 'High Priority'}</span>
           </div>
         </div>
 
