@@ -1,15 +1,23 @@
 // Indian Municipal Road Repair Cost Estimation Engine
-// Based on Indian Roads Congress (IRC:82-2015 / IRC:116) and CPWD Delhi Schedule of Rates (DSR)
+// Pothole repair cost is strictly fixed at ₹2,700 flat per unit.
+
+export const FIXED_POTHOLE_COST = 2700;
 
 export const IRC_COST_SPECIFICATIONS = {
   "Pothole": {
-    standard: "IRC:82-2015 & IRC:116",
-    description: "Vertical edge squaring, RS-1 tack coat, 40mm Bituminous Concrete/Cold Mix & mechanical plate compaction",
-    prepBase: 450,
-    unitRateSqm: 1550,
-    compaction: 300,
-    minArea: 0.35,
-    maxAreaFactor: 0.90
+    standard: "Municipal Tender Schedule (IRC:82 & IRC:116)",
+    description: "Cold mix / Bituminous concrete edge squaring & compaction",
+    fixedCost: 2700
+  },
+  "Safe Bituminous Patch": {
+    standard: "IRC:82-2015 (Repaired Surface)",
+    description: "Existing compacted bitumen patch - road surface flush and safe",
+    fixedCost: 0
+  },
+  "No Defects Detected": {
+    standard: "IRC:SP:16 (Acceptable Surface Quality)",
+    description: "Good road surface condition - zero repair cost",
+    fixedCost: 0
   },
   "Alligator Crack": {
     standard: "IRC:82-2015 Cl. 5.3",
@@ -38,10 +46,23 @@ export const IRC_COST_SPECIFICATIONS = {
   }
 };
 
-export function calculateIRCCost(damageType, severity = 0.8, roadImportance = 0.8) {
-  const sev = Math.max(0.1, Math.min(1.0, parseFloat(severity) || 0.8));
-  const spec = IRC_COST_SPECIFICATIONS[damageType] || IRC_COST_SPECIFICATIONS["Pothole"];
+export function calculateIRCCost(damageType, severity = 0.8, roadImportance = 0.8, count = 1) {
+  if (!damageType || damageType === 'None' || damageType === 'Clean' || damageType === 'Safe' || 
+      damageType.includes('Safe') || damageType.includes('No Defect') || count <= 0) {
+    return 0;
+  }
 
+  // Strictly ₹2,700 flat per pothole
+  if (damageType.toLowerCase().includes('pothole')) {
+    return (count || 1) * FIXED_POTHOLE_COST;
+  }
+
+  const spec = IRC_COST_SPECIFICATIONS[damageType] || IRC_COST_SPECIFICATIONS["Pothole"];
+  if (spec.fixedCost !== undefined) {
+    return (count || 1) * spec.fixedCost;
+  }
+
+  const sev = Math.max(0.1, Math.min(1.0, parseFloat(severity) || 0.8));
   let total = 0;
   if (spec.unitRateSqm) {
     const area = spec.minArea + (sev * spec.maxAreaFactor);
